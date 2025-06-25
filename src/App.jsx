@@ -21,51 +21,36 @@ export default function AutoDeleteTodoList() {
   const [vegList, setVegList] = useState([]);
   const timers = useRef({});
 
-  const handleMainClick = (item, index) => {
-    // Remove from main list
-    setMainList((prev) => prev.filter((_, i) => i !== index));
-
-    const isFruit = item.type === "Fruit";
-    const setList = isFruit ? setFruitList : setVegList;
-
-    // Add to type column
-    setList((prev) => [...prev, item]);
-
-    // Set timeout to return to main list
-    const id = setTimeout(() => {
-      setList((prev) => {
-        const stillExists = prev.find((i) => i.name === item.name);
-        if (!stillExists) return prev;
-
-        const updated = prev.filter((i) => i.name !== item.name);
-
-        // Avoid adding duplicate to main list
-        setMainList((oldMain) => {
-          const already = oldMain.find((i) => i.name === item.name);
-          return already ? oldMain : [...oldMain, item];
-        });
-
-        return updated;
-      });
-    }, 5000);
-
-    timers.current[item.name] = id;
-  };
-
-  const handleTypeClick = (item, type) => {
+  const moveToMainList = (item, setList) => {
+    // หยุด timer ถ้ามี
     if (timers.current[item.name]) {
       clearTimeout(timers.current[item.name]);
       delete timers.current[item.name];
     }
 
-    const setList = type === "Fruit" ? setFruitList : setVegList;
-    setList((prev) => prev.filter((i) => i.name !== item));
+    setList((prev) => prev.filter((i) => i.name !== item.name));
 
-    // Avoid duplicate return to main
     setMainList((prev) => {
       const already = prev.find((i) => i.name === item.name);
       return already ? prev : [...prev, item];
     });
+  };
+
+  const handleMainClick = (item, index) => {
+    setMainList((prev) => prev.filter((_, i) => i !== index));
+    const setList = item.type === "Fruit" ? setFruitList : setVegList;
+    setList((prev) => [...prev, item]);
+
+    // ตั้งเวลาให้กลับ
+    const id = setTimeout(() => {
+      moveToMainList(item, setList);
+    }, 5000);
+    timers.current[item.name] = id;
+  };
+
+  const handleCategoryClick = (item, type) => {
+    const setList = type === "Fruit" ? setFruitList : setVegList;
+    moveToMainList(item, setList);
   };
 
   return (
@@ -86,7 +71,7 @@ export default function AutoDeleteTodoList() {
         {fruitList.map((item) => (
           <button
             key={item.name}
-            onClick={() => handleTypeClick(item, "Fruit")}
+            onClick={() => handleCategoryClick(item, "Fruit")}
             className="item-btn"
           >
             {item.name}
@@ -98,7 +83,7 @@ export default function AutoDeleteTodoList() {
         {vegList.map((item) => (
           <button
             key={item.name}
-            onClick={() => handleTypeClick(item, "Vegetable")}
+            onClick={() => handleCategoryClick(item, "Vegetable")}
             className="item-btn"
           >
             {item.name}
